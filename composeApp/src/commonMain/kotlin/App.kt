@@ -19,24 +19,42 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.jetbrains.compose.ui.tooling.preview.Preview
+import org.publicvalue.multiplatform.oidc.OpenIdConnectClient
+import org.publicvalue.multiplatform.oidc.types.CodeChallengeMethod
 
 @Composable
 @Preview
 fun App() {
-    var persistedAuthUrl by mutableSetting()
+    var persistedOpenIdConfig by mutableSetting()
     var persistedEmail by mutableSetting()
 
 
-    var authUrl: String by remember { mutableStateOf(persistedAuthUrl) }
+    var openIdConfig: String by remember { mutableStateOf(persistedOpenIdConfig) }
     var loggedIn by remember { mutableStateOf(false) }
     var password by remember { mutableStateOf("") }
 
 
+    val client = OpenIdConnectClient(discoveryUri = "<discovery url>") {
+        endpoints {
+            tokenEndpoint = "<tokenEndpoint>"
+            authorizationEndpoint = "<authorizationEndpoint>"
+            userInfoEndpoint = null
+            endSessionEndpoint = "<endSessionEndpoint>"
+        }
+
+        clientId = "<clientId>"
+        clientSecret = "<clientSecret>"
+        scope = "openid profile"
+        codeChallengeMethod = CodeChallengeMethod.S256
+        redirectUri = "<redirectUri>"
+    }
+
+
     MaterialTheme {
-        if (authUrl.isEmpty()) {
-            QrScannerCompose(authUrl) {
-                authUrl = it
-                persistedAuthUrl = it
+        if (openIdConfig.isEmpty()) {
+            QrScannerCompose(openIdConfig) {
+                openIdConfig = it
+                persistedOpenIdConfig = it
             }
         } else {
             if (!loggedIn) {
@@ -52,7 +70,7 @@ fun App() {
                         modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp)
                     )
                     Text(
-                        text = authUrl,
+                        text = openIdConfig,
                         fontSize = 12.sp,
                         textAlign = TextAlign.Center,
                         modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp)
@@ -67,7 +85,7 @@ fun App() {
                     Spacer(modifier = Modifier.height(48.dp))
 
                     Button(
-                        onClick = { authUrl = "" },
+                        onClick = { openIdConfig = "" },
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Text(text = "Reset URL")

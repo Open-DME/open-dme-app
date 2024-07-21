@@ -1,8 +1,5 @@
-import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-import org.jetbrains.kotlin.gradle.targets.js.dsl.ExperimentalWasmDsl
-import org.jetbrains.kotlin.gradle.targets.js.webpack.KotlinWebpackConfig
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
@@ -52,6 +49,7 @@ kotlin {
         androidMain.dependencies {
             implementation(compose.preview)
             implementation(libs.androidx.activity.compose)
+            implementation(libs.ktor.client.okhttp)
         }
         commonMain.dependencies {
             implementation(compose.runtime)
@@ -63,6 +61,18 @@ kotlin {
             implementation(libs.qr.kit)
             implementation(libs.multiplatform.settings)
             implementation(libs.multiplatform.settings.no.arg)
+
+            // http client
+            implementation(libs.ktor.client.core)
+            implementation(libs.ktor.client.core)
+
+            // open id
+            implementation(libs.oidc.appsupport)
+            implementation(libs.oidc.ktor)
+
+        }
+        iosMain.dependencies {
+            implementation(libs.ktor.client.darwin)
         }
     }
 }
@@ -81,6 +91,9 @@ android {
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = 1
         versionName = "1.0"
+        addManifestPlaceholders(
+            mapOf("oidcRedirectScheme" to "io.github.opendme")
+        )
     }
     packaging {
         resources {
