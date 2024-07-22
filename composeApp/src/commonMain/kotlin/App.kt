@@ -13,7 +13,6 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import org.jetbrains.compose.ui.tooling.preview.Preview
-import org.publicvalue.multiplatform.oidc.OpenIdConnectClient
 
 
 @Composable
@@ -48,7 +47,6 @@ fun App() {
                     return@Scaffold
                 }
 
-                var openIdConnectClient: OpenIdConnectClient? = null
                 var client: HttpClient?
 
                 var homeData: HomeData? by remember { mutableStateOf(null) }
@@ -58,7 +56,7 @@ fun App() {
                 }
 
                 coroutineScope.launch {
-                    openIdConnectClient = createOpenIdClient(openId).also {
+                    createOpenIdClient(openId).also {
                         client = createClient(it)
                         homeData = HomeData(
                             it,
