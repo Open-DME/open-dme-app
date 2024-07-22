@@ -16,14 +16,16 @@ data class OpenId(
 )
 
 
-fun createOpenIdClient(networkConfig: OpenId): OpenIdConnectClient {
-    return OpenIdConnectClient(discoveryUri = networkConfig.discoverUrl) {
+suspend fun createOpenIdClient(networkConfig: OpenId): OpenIdConnectClient {
+    val client = OpenIdConnectClient(discoveryUri = networkConfig.discoverUrl) {
         clientId = networkConfig.clientId
         clientSecret = networkConfig.clientSecret
         scope = networkConfig.scope
         codeChallengeMethod = CodeChallengeMethod.S256
         redirectUri = PlatformConstants.redirectUrl
     }
+    client.discover()
+    return client
 }
 
 @OptIn(ExperimentalOpenIdConnect::class)
