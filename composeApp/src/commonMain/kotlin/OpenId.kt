@@ -8,6 +8,7 @@ import io.ktor.client.plugins.cookies.HttpCookies
 import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logging
 import io.ktor.client.plugins.plugin
+import io.ktor.client.plugins.resources.Resources
 import io.ktor.client.request.accept
 import io.ktor.client.request.header
 import io.ktor.http.ContentType
@@ -50,6 +51,7 @@ fun createClient(client: OpenIdConnectClient, config: OpenId, tokenStore: TokenS
     val refreshHandler = TokenRefreshHandler(tokenStore)
     val httpClient = HttpClient {
         install(HttpCookies)
+        install(Resources)
         install(Logging) {
             level = LogLevel.ALL
         }

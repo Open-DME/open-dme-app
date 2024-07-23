@@ -18,8 +18,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import dto.Api
+import dto.ApiService
+import dto.Responses
 import io.ktor.client.call.body
-import io.ktor.client.request.post
+import io.ktor.client.plugins.resources.post
 import io.ktor.client.statement.bodyAsText
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
@@ -33,6 +36,7 @@ import org.publicvalue.multiplatform.oidc.ExperimentalOpenIdConnect
 import org.publicvalue.multiplatform.oidc.OpenIdConnectClient
 import org.publicvalue.multiplatform.oidc.tokenstore.saveTokens
 import org.publicvalue.multiplatform.oidc.types.remote.AccessTokenResponse
+import saschpe.log4k.Log
 
 data class HomeData(
     var openIdConfig: String,
@@ -99,7 +103,7 @@ fun HomeElement(homeData: HomeData, onResetConfig: () -> Unit) {
             verticalArrangement = Arrangement.Center
         ) {
 
-            var parsedResponse: Test? by remember { mutableStateOf(null) }
+            var parsedResponse: Responses.Test? by remember { mutableStateOf(null) }
             var errorMessage: String? by remember { mutableStateOf(null) }
 
             val coroutineExceptionHandler = CoroutineExceptionHandler { _, throwable ->
@@ -108,17 +112,17 @@ fun HomeElement(homeData: HomeData, onResetConfig: () -> Unit) {
 
             openIdConnectClient?.let {
                 val httpClient = createClient(it, openId, tokenStore)
+                val apiService = ApiService(httpClient)
 
                 CoroutineScope(Dispatchers.IO + coroutineExceptionHandler).launch {
-                    val response = httpClient.post("/api/v1/test")
-                    if (response.status.value in 200..299) {
-                        parsedResponse = response.body()
-                    } else {
-                        errorMessage = "${response.status} and ${response.bodyAsText()}"
-                    }
+
+                    apiService.test(onSuccess = { body ->
+                        parsedResponse = body
+                    }, onError = { status, body ->
+                        errorMessage = "$status and $body"
+                    })
                 }
             }
-
 
             Text(
                 text = errorMessage ?: ""
@@ -155,8 +159,3 @@ fun HomeElement(homeData: HomeData, onResetConfig: () -> Unit) {
 
 }
 
-@Serializable
-data class Test(
-    val name: String,
-    val roles: List<String>
-)
