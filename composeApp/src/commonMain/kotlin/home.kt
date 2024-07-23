@@ -103,7 +103,7 @@ fun HomeElement(homeData: HomeData, onResetConfig: () -> Unit) {
             var errorMessage: String? by remember { mutableStateOf(null) }
 
             val coroutineExceptionHandler = CoroutineExceptionHandler { _, throwable ->
-                throwable.printStackTrace()
+                Log.error(throwable) { "Network call failed" }
             }
 
             openIdConnectClient?.let {
