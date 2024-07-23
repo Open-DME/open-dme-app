@@ -56,12 +56,16 @@ fun App() {
                 }
 
                 coroutineScope.launch {
-                    createOpenIdClient(openId).also {
-                        client = createClient(it)
-                        homeData = HomeData(
-                            it,
-                            openIdConfig
-                        )
+                    createOpenIdClient(openId).also { openIdClient ->
+                        client = createClient(openIdClient).also { httpClient ->
+                            homeData = HomeData(
+                                openIdClient,
+                                openIdConfig,
+                                httpClient,
+                                openId
+                            )
+                        }
+
                     }
                 }
             }
