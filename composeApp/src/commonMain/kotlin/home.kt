@@ -18,34 +18,46 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.post
 import io.ktor.client.statement.bodyAsText
-import io.ktor.http.HttpMethod
-import io.ktor.http.URLProtocol
-import io.ktor.http.path
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerializationException
+import kotlinx.serialization.json.Json
+import org.publicvalue.multiplatform.oidc.ExperimentalOpenIdConnect
 import org.publicvalue.multiplatform.oidc.OpenIdConnectClient
+import org.publicvalue.multiplatform.oidc.tokenstore.saveTokens
 import org.publicvalue.multiplatform.oidc.types.remote.AccessTokenResponse
 
 data class HomeData(
-    var openIdConnectClient: OpenIdConnectClient,
     var openIdConfig: String,
-    var client: HttpClient,
-    var openId: OpenId
 )
 
+@OptIn(ExperimentalOpenIdConnect::class)
 @Composable
-fun HomeElement(homeData: HomeData?, onResetConfig: () -> Unit) {
+fun HomeElement(homeData: HomeData, onResetConfig: () -> Unit) {
     var accessToken: AccessTokenResponse? by remember { mutableStateOf(null) }
-    homeData ?: return
+    var openIdConnectClient: OpenIdConnectClient? by remember { mutableStateOf(null) }
+
+
+    val openId: OpenId
+    try {
+        openId = Json.decodeFromString<OpenId>(homeData.openIdConfig)
+    } catch (ex: SerializationException) {
+        onResetConfig.invoke()
+        return
+    }
+    val coroutineScope = rememberCoroutineScope()
+    coroutineScope.launch {
+        openIdConnectClient = createOpenIdClient(openId)
+    }
+
+    val tokenStore = getStore()
 
     if (accessToken == null) {
         Column(
@@ -60,8 +72,13 @@ fun HomeElement(homeData: HomeData?, onResetConfig: () -> Unit) {
                 modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp)
             )
 
-            OpenIdLoginButton(openIdConnectClient = homeData.openIdConnectClient) {
-                accessToken = it
+            openIdConnectClient?.let {
+                OpenIdLoginButton(openIdConnectClient = it) {
+                    accessToken = it
+                    CoroutineScope(Dispatchers.Default).launch {
+                        tokenStore.saveTokens(it)
+                    }
+                }
             }
 
             Spacer(modifier = Modifier.height(48.dp))
@@ -85,26 +102,23 @@ fun HomeElement(homeData: HomeData?, onResetConfig: () -> Unit) {
             var parsedResponse: Test? by remember { mutableStateOf(null) }
             var errorMessage: String? by remember { mutableStateOf(null) }
 
-            val coroutineExceptionHandler = CoroutineExceptionHandler{_, throwable ->
+            val coroutineExceptionHandler = CoroutineExceptionHandler { _, throwable ->
                 throwable.printStackTrace()
             }
 
-            CoroutineScope(Dispatchers.IO + coroutineExceptionHandler).launch {
-                val response = homeData.client.post {
-                    method = HttpMethod.Post
-                    url {
-                        protocol = URLProtocol.HTTP
-                        host = homeData.openId.hostName
-                        path("/api/v1/test")
+            openIdConnectClient?.let {
+                val httpClient = createClient(it, openId, tokenStore)
+
+                CoroutineScope(Dispatchers.IO + coroutineExceptionHandler).launch {
+                    val response = httpClient.post("/api/v1/test")
+                    if (response.status.value in 200..299) {
+                        parsedResponse = response.body()
+                    } else {
+                        errorMessage = "${response.status} and ${response.bodyAsText()}"
                     }
                 }
-
-                if(response.status.value in 200..299) {
-                    parsedResponse = response.body()
-                } else {
-                    errorMessage = "${response.status} and ${response.bodyAsText()}"
-                }
             }
+
 
             Text(
                 text = errorMessage ?: ""
@@ -115,13 +129,27 @@ fun HomeElement(homeData: HomeData?, onResetConfig: () -> Unit) {
             )
 
             Text(
-                text = parsedResponse?.roles?.joinToString { ", " } ?: ""
+                text = "Roles",
+                fontSize = 28.sp,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp)
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
-            OpenIdLogoutButton(homeData.openIdConnectClient, accessToken) {
-                accessToken = null
+            parsedResponse?.roles?.forEach {
+                Text(
+                    text = it
+                )
             }
+
+
+            Spacer(modifier = Modifier.height(16.dp))
+            openIdConnectClient?.let {
+                OpenIdLogoutButton(it, accessToken) {
+                    accessToken = null
+                }
+            }
+
         }
     }
 

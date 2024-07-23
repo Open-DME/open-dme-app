@@ -1,10 +1,13 @@
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.DefaultRequest
+import io.ktor.client.plugins.HttpSend
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.auth.Auth
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.plugins.cookies.HttpCookies
 import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logging
+import io.ktor.client.plugins.plugin
 import io.ktor.client.request.accept
 import io.ktor.client.request.header
 import io.ktor.http.ContentType
@@ -16,7 +19,9 @@ import org.publicvalue.multiplatform.oidc.ExperimentalOpenIdConnect
 import org.publicvalue.multiplatform.oidc.OpenIdConnectClient
 import org.publicvalue.multiplatform.oidc.ktor.oidcBearer
 import org.publicvalue.multiplatform.oidc.tokenstore.TokenRefreshHandler
+import org.publicvalue.multiplatform.oidc.tokenstore.TokenStore
 import org.publicvalue.multiplatform.oidc.types.CodeChallengeMethod
+import saschpe.log4k.Log
 
 @Serializable
 data class OpenId(
@@ -41,10 +46,9 @@ suspend fun createOpenIdClient(networkConfig: OpenId): OpenIdConnectClient {
 }
 
 @OptIn(ExperimentalOpenIdConnect::class)
-fun createClient(client: OpenIdConnectClient): HttpClient {
-    val tokenStore = getStore()
+fun createClient(client: OpenIdConnectClient, config: OpenId, tokenStore: TokenStore): HttpClient {
     val refreshHandler = TokenRefreshHandler(tokenStore)
-    return HttpClient {
+    val httpClient = HttpClient {
         install(HttpCookies)
         install(Logging) {
             level = LogLevel.ALL
@@ -66,6 +70,7 @@ fun createClient(client: OpenIdConnectClient): HttpClient {
         }
 
         install(DefaultRequest) {
+            url(config.hostName)
             header(HttpHeaders.ContentType, ContentType.Application.Json)
             accept(ContentType.Application.Json)
         }
@@ -74,7 +79,17 @@ fun createClient(client: OpenIdConnectClient): HttpClient {
                 tokenStore = tokenStore,
                 refreshHandler = refreshHandler,
                 client = client,
+                onRefreshFailed = {
+                    Log.error(throwable = it) {
+                        "Error occurred refreshing token"
+                    }
+                }
             )
         }
     }
+    httpClient.plugin(HttpSend).intercept { request ->
+        execute(request)
+    }
+
+    return httpClient
 }

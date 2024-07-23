@@ -76,6 +76,8 @@ kotlin {
 
             implementation(libs.kotlinx.serialization.json)
 
+            implementation(libs.log4k)
+
         }
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)
