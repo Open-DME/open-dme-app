@@ -64,15 +64,22 @@ kotlin {
             implementation(libs.multiplatform.settings.no.arg)
 
             // http client
+            implementation(libs.kotlin.serialization)
             implementation(libs.ktor.client.core)
-            implementation(libs.ktor.client.core)
+            implementation(libs.ktor.client.content.negotiation)
+            implementation(libs.ktor.client.logging)
             implementation(libs.ktor.client.auth)
+            implementation(libs.ktor.client.resources)
+
+            implementation(libs.kotlinx.datetime)
 
             // open id
             implementation(libs.oidc.appsupport)
             implementation(libs.oidc.ktor)
 
             implementation(libs.kotlinx.serialization.json)
+
+            implementation(libs.log4k)
 
         }
         iosMain.dependencies {
