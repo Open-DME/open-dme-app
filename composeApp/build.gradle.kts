@@ -81,6 +81,10 @@ kotlin {
 
             implementation(libs.log4k)
 
+            // injection
+            implementation(project.dependencies.platform(libs.koin.bom))
+            implementation(libs.koin.core)
+
         }
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)
