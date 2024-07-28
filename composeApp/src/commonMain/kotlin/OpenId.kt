@@ -31,7 +31,7 @@ data class OpenId(
     var clientSecret: String,
     var scope: String,
     var hostName: String,
-    var topic: String?
+    var topic: String
 )
 
 

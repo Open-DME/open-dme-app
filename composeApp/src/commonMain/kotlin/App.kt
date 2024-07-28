@@ -27,7 +27,9 @@ fun App() {
 
     NotifierManager.addListener(listener = object: Listener {
         override fun onNewToken(token: String) {
-            println("onNewToken: $token") //Update user token in the server if needed
+            Log.warn {
+                "onNewToken: $token"
+            }
         }
 
         override fun onNotificationClicked(data: PayloadData) {

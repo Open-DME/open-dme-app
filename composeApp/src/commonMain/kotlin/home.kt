@@ -49,6 +49,7 @@ fun HomeElement(homeData: HomeData, onResetConfig: () -> Unit) {
     try {
         openId = Json.decodeFromString<OpenId>(homeData.openIdConfig)
     } catch (ex: SerializationException) {
+        Log.error(ex) { "Invalid Qr Code" }
         onResetConfig.invoke()
         return
     }
@@ -57,7 +58,7 @@ fun HomeElement(homeData: HomeData, onResetConfig: () -> Unit) {
         openIdConnectClient = createOpenIdClient(openId)
     }
 
-    openId.topic?.let {
+    openId.topic.let {
         coroutineScope.launch {
             NotifierManager.getPushNotifier().subscribeToTopic(it)
         }
