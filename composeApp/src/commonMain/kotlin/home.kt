@@ -18,18 +18,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import dto.Api
+import com.mmk.kmpnotifier.notification.NotifierManager
 import dto.ApiService
 import dto.Responses
-import io.ktor.client.call.body
-import io.ktor.client.plugins.resources.post
-import io.ktor.client.statement.bodyAsText
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.launch
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import org.publicvalue.multiplatform.oidc.ExperimentalOpenIdConnect
@@ -53,12 +49,19 @@ fun HomeElement(homeData: HomeData, onResetConfig: () -> Unit) {
     try {
         openId = Json.decodeFromString<OpenId>(homeData.openIdConfig)
     } catch (ex: SerializationException) {
+        Log.error(ex) { "Invalid Qr Code" }
         onResetConfig.invoke()
         return
     }
     val coroutineScope = rememberCoroutineScope()
     coroutineScope.launch {
         openIdConnectClient = createOpenIdClient(openId)
+    }
+
+    openId.topic.let {
+        coroutineScope.launch {
+            NotifierManager.getPushNotifier().subscribeToTopic(it)
+        }
     }
 
     val tokenStore = getStore()

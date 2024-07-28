@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
 import qrscanner.QrScanner
+import saschpe.log4k.Log
 
 
 /**

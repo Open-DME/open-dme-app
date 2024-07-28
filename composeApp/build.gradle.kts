@@ -1,3 +1,4 @@
+import com.google.gms.googleservices.GoogleServicesPlugin
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
@@ -7,6 +8,7 @@ plugins {
     alias(libs.plugins.jetbrainsCompose)
     alias(libs.plugins.compose.compiler)
     kotlin("plugin.serialization") version "2.0.0"
+    id("com.google.gms.google-services") version "4.4.2" apply false
 }
 
 kotlin {
@@ -40,6 +42,7 @@ kotlin {
         iosSimulatorArm64()
     ).forEach { iosTarget ->
         iosTarget.binaries.framework {
+            export("io.github.mirzemehdi:kmpnotifier:${libs.kmpnotifier.get().version}")
             baseName = "ComposeApp"
             isStatic = true
         }
@@ -81,6 +84,9 @@ kotlin {
 
             implementation(libs.log4k)
 
+            // notifications
+            api(libs.kmpnotifier)
+
         }
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)
@@ -96,6 +102,7 @@ android {
     sourceSets["main"].res.srcDirs("src/androidMain/res")
     sourceSets["main"].resources.srcDirs("src/commonMain/resources")
 
+    apply<GoogleServicesPlugin>()
     defaultConfig {
         applicationId = "io.github.opendme"
         minSdk = libs.versions.android.minSdk.get().toInt()
